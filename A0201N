@@ -1,0 +1,62 @@
+#include <iostream>
+#include <vector>
+
+using D2Vector = std::vector<std::vector<int>>;
+using D3Vector = std::vector<D2Vector>;
+
+void TaskN(std::string alfa, std::string beta, int quantity_changes) {
+  const int kOverMax = 1'000'000'100;
+  const int kMaxx = 1'000'000'000;
+  int l1 = alfa.size();
+  int l2 = beta.size();
+  D3Vector dp(l1 + 1, D2Vector(l2 + 1, std::vector<int>(quantity_changes + 1,
+                                                        kOverMax)));
+  for (int i = 0; i < quantity_changes + 1; ++i) {
+    dp[0][0][i] = 0;
+  }
+  for (int i = 1; i < std::min(l1, l2) + 1; ++i) {
+    dp[i][i][0] = ((i == 1) ? 0 : (dp[i - 1][i - 1][0])) +
+                  static_cast<int>(alfa[i - 1] != beta[i - 1]);
+  }
+  for (int changes = 1; changes < quantity_changes + 1; ++changes) {
+    for (int j = 1; j < std::min(l2, changes) + 1; ++j) {
+      dp[0][j][changes] = 0;
+    }
+    for (int j = 1; j < std::min(l1, changes) + 1; ++j) {
+      dp[j][0][changes] = 0;
+    }
+
+    for (int i = 1; i < l1 + 1; ++i) {
+      for (int j = 1; j < l2 + 1; ++j) {
+        int flag = static_cast<int>(alfa[i - 1] != beta[j - 1]);
+        int val1 = dp[i - 1][j - 1][changes] + flag;
+        int val2 = dp[i][j - 1][changes - 1];
+        int val3 = dp[i - 1][j][changes - 1];
+        dp[i][j][changes] = std::min(val1, std::min(val2, val3));
+        // std::cout << dp[i][j][changes] << ' ';
+      }
+      // std::cout << '\n';
+    }
+    // std::cout << "\n\n";
+  }
+  int ans = kOverMax;
+  for (int changes = 0; changes < quantity_changes + 1; ++changes) {
+    ans = std::min(ans, dp[l1][l2][changes] - (quantity_changes - changes));
+  }
+  if (ans < 0) {
+    ans = 0;
+  }
+  if (ans > kMaxx) {
+    ans = -1;
+  }
+  std::cout << ans << '\n';
+}
+
+int main() {
+  std::string alfa;
+  std::string beta;
+  std::cin >> alfa >> beta;
+  int quantity_changes = 0;
+  std::cin >> quantity_changes;
+  TaskN(alfa, beta, quantity_changes);
+}
