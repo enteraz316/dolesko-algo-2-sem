@@ -1,0 +1,209 @@
+#include <array>
+#include <iostream>
+#include <map>
+#include <vector>
+
+const short cN = 4;
+const short cSq = cN * cN;
+
+const short c6 = 6;
+const short c7 = 7;
+const short c8 = 8;
+const short c9 = 9;
+const short c10 = 10;
+const short c11 = 11;
+const short c12 = 12;
+const short c13 = 13;
+const short c14 = 14;
+const short c15 = 15;
+
+std::array<short, cSq> end = {1,  2,   3,   4,   5,   c6,  c7,  c8,
+                              c9, c10, c11, c12, c13, c14, c15, 0};
+
+const short cMoves[4]{-1, +1, -cN, +cN};
+const char cDirections[4]{'R', 'L', 'D', 'U'};
+
+struct Position {
+  std::array<short, cSq> pos;
+  std::string path;
+  short zero_indx;
+  short evristics;
+
+  Position() : pos(), evristics(0) {
+    for (short i = 0; i < cSq; ++i) {
+      std::cin >> pos[i];
+      if (pos[i] == 0) {
+        zero_indx = i;
+      }
+    }
+    CalculateEvristics();
+  }
+
+  Position(const Position& from, short move_nunber)
+      : pos(from.pos), path(from.path), evristics(0) {
+    zero_indx = from.zero_indx + cMoves[move_nunber];
+    std::swap(pos[zero_indx], pos[from.zero_indx]);
+    path.push_back(cDirections[move_nunber]);
+    CalculateEvristics();
+  }
+
+  bool operator<(const Position& other) const {
+    return (path.size() + evristics < other.path.size() + other.evristics);
+  }
+
+  void CalculateEvristics() {
+    for (short i = 0; i < cSq; ++i) {
+      if (pos[i] != 0) {
+        short final = pos[i] - 1;
+        evristics +=
+            1 * (abs((i % cN) - (final % cN)) + abs((i / cN) - (final / cN)));
+      }
+    }
+    for (short i = 0; i < cN; ++i) {
+      for (short j = 0; j < cN; ++j) {
+        if (pos[i * cN + j] != 0 && (pos[i * cN + j] - 1) / cN == i) {
+          for (short k = j; k < cN; ++k) {
+            if (pos[i * cN + k] != 0 && (pos[i * cN + k] - 1) / cN == i &&
+                pos[i * cN + j] > pos[i * cN + k]) {
+              evristics += 2;
+            }
+          }
+        }
+      }
+    }
+    for (short j = 0; j < cN; ++j) {
+      for (short i = 0; i < cN; ++i) {
+        if (pos[i * cN + j] != 0 && (pos[i * cN + j] - 1) % cN == j) {
+          for (short k = i; k < cN; ++k) {
+            if (pos[k * cN + j] != 0 && (pos[k * cN + j] - 1) % cN == j &&
+                pos[i * cN + j] > pos[k * cN + j]) {
+              evristics += 2;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  bool IsSolvable() {
+    short inversions = 0;
+    for (short i = 0; i < cSq; ++i) {
+      if (pos[i] == 0) {
+        continue;
+      }
+      for (short j = i + 1; j < cSq; ++j) {
+        if (pos[j] != 0 && pos[i] > pos[j]) {
+          ++inversions;
+        }
+      }
+    }
+    inversions += zero_indx / cN;
+    return (inversions % 2) != 0;
+  }
+};
+
+template <typename T>
+class Heap {
+  std::vector<T> array_;
+
+ public:
+  Heap() = default;
+
+  bool IsEmpty() { return array_.empty(); }
+
+  long long SiftDown(long long i) {
+    if (static_cast<long long>(array_.size()) < 2 * i + 1 + 1) {
+      return i;
+    }
+    long long smallest_child = 2 * i + 1;
+    if (smallest_child + 1 < static_cast<long long>(array_.size()) &&
+        array_[smallest_child + 1] < array_[smallest_child]) {
+      ++smallest_child;
+    }
+    if (array_[smallest_child] < array_[i]) {
+      std::swap(array_[i], array_[smallest_child]);
+      return SiftDown(smallest_child);
+    }
+    return i;
+  }
+
+  long long SiftUp(long long i) {
+    long long parent = (i - 1) / 2;
+    if (array_[i] < array_[parent]) {
+      std::swap(array_[parent], array_[i]);
+    } else {
+      return i;
+    }
+    return SiftUp(parent);
+  }
+
+  void Pop() {
+    std::swap(*array_.begin(), *(--array_.end()));
+    array_.pop_back();
+    SiftDown(0);
+  }
+
+  T ExtractMin() {
+    T min = array_[0];
+    std::swap(*array_.begin(), *(--array_.end()));
+    array_.pop_back();
+    SiftDown(0);
+    return min;
+  }
+
+  void Push(const T& value) {
+    array_.push_back(value);
+    SiftUp(array_.size() - 1);
+  }
+};
+
+void TaskHI() {
+  Position start;
+
+  if (!start.IsSolvable()) {
+    std::cout << -1 << std::endl;
+    return;
+  }
+
+  std::map<std::array<short, cSq>, int> dist;
+  Heap<Position> heap;
+  heap.Push(start);
+  dist[start.pos] = 0;
+
+  while (!heap.IsEmpty()) {
+    Position curr = heap.ExtractMin();
+
+    if (curr.pos == end) {
+      std::cout << curr.path.size() << std::endl;
+      std::cout << curr.path << std::endl;
+      return;
+    }
+
+    for (int i = 0; i < 4; ++i) {
+      auto to = curr.zero_indx + cMoves[i];
+      if (((to % cN == curr.zero_indx % cN) ||
+           (to / cN == curr.zero_indx / cN)) &&
+          -1 < to && to < cSq) {
+        Position next(curr, i);
+        if (!dist.contains(next.pos) ||
+            curr.path.size() + 1 <
+                static_cast<unsigned long long>(dist[next.pos])) {
+          dist[next.pos] = curr.path.size() + 1;
+          heap.Push(next);
+          /*
+           std::cout << next.path.size() << " :  ";
+          for (int k = 0; k < sq; ++k) {
+            std::cout << next.pos[k] << ' ';
+          }
+          std::cout << directions[i] << std::endl;
+           */
+        }
+      }
+    }
+  }
+}
+
+int main() {
+  TaskHI();
+  return 0;
+}
