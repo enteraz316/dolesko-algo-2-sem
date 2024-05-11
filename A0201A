@@ -1,0 +1,38 @@
+#include <iostream>
+#include <vector>
+
+void LNDS(std::vector<std::pair<long long, int>> sequnce, int length) {
+  const std::pair<long long, int> kInf = {1'000'000'000'000, -1};
+  std::vector<std::pair<long long, int>> dp(length, kInf);
+  std::vector<long long> prev(length, 0);
+
+  for (int i = 0; i < length; ++i) {
+    int pos = std::lower_bound(dp.begin(), dp.end(), sequnce[i]) - dp.begin();
+    dp[pos] = sequnce[i];
+    prev[i] = pos > 0 ? dp[pos - 1].second : -1;
+  }
+
+  int lnds_len = std::lower_bound(dp.begin(), dp.end(), kInf) - dp.begin();
+  int idx = dp[lnds_len - 1].second;
+  std::cout << lnds_len << '\n';
+  std::vector<int> anwser(lnds_len);
+  for (int i = lnds_len - 1; i > -1; --i) {
+    anwser[i] = idx + 1;
+    idx = prev[idx];
+  }
+  for (int i = 0; i < lnds_len; ++i) {
+    std::cout << anwser[i] << ' ';
+  }
+}
+
+int main() {
+  int length = 0;
+  std::cin >> length;
+  std::vector<std::pair<long long, int>> sequnce(length);
+  for (int i = 0; i < length; ++i) {
+    std::cin >> sequnce[i].first;
+    sequnce[i].first = -sequnce[i].first;
+    sequnce[i].second = i;
+  }
+  LNDS(sequnce, length);
+}
