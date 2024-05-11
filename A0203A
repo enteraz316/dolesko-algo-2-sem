@@ -1,0 +1,154 @@
+#include <iostream>
+#include <vector>
+
+// #include "NumberValueHeap.cpp"
+bool operator<(std::pair<int, int> a, std::pair<int, int> b) {
+  return a.second < b.second;
+}
+
+template <typename T>
+class Heap {
+  std::vector<int> numeration_;
+  std::vector<std::pair<int, T>> array_;
+
+ public:
+  Heap() = default;
+
+  bool IsEmpty() { return array_.empty(); }
+  
+  int SiftDown(int i) {
+    if (static_cast<int>(array_.size()) < 2 * i + 1 + 1) {
+      return i;
+    }
+    int smallest_child = 2 * i + 1;
+    if (smallest_child + 1 < static_cast<int>(array_.size()) &&
+        array_[smallest_child + 1] < array_[smallest_child]) {
+      ++smallest_child;
+    }
+    if (array_[smallest_child] < array_[i]) {
+      std::swap(array_[i], array_[smallest_child]);
+      std::swap(numeration_[array_[i].first],
+                numeration_[array_[smallest_child].first]);
+      return SiftDown(smallest_child);
+    }
+    return i;
+  }
+
+  int SiftUp(int i) {
+    int parent = (i - 1) / 2;
+    if (array_[i] < array_[parent]) {
+      std::swap(array_[parent], array_[i]);
+      std::swap(numeration_[array_[i].first],
+                numeration_[array_[parent].first]);
+    } else {
+      return i;
+    }
+    return SiftUp(parent);
+  }
+
+  std::pair<int, T> GetMin() { return array_[0]; }
+
+  std::pair<int, T> ExtractMin() {
+    std::pair<int, T> min = array_[0];
+    std::swap(array_[0], *(--array_.end()));
+    std::swap(numeration_[array_.begin()->first],
+              numeration_[((--array_.end())->first)]);
+    array_.pop_back();
+    SiftDown(0);
+    return min;
+  }
+
+  void Push(const std::pair<int, T>& value) {
+    array_.push_back(value);
+    numeration_.push_back(array_.size() - 1);
+    SiftUp(array_.size() - 1);
+  }
+
+  void ChangeValue(const std::pair<int, T>& new_value) {
+    array_[numeration_[new_value.first]] = new_value;
+    SiftUp(numeration_[new_value.first]);
+    SiftDown(numeration_[new_value.first]);
+  }
+};
+
+const int cOverMax = 2009000999;
+
+class Graph {
+  int size_ = 0;
+  std::vector<std::vector<std::pair<int, int>>> edges_;
+  std::vector<bool> used_;
+
+ public:
+  Graph(int quantity_vertex, int quantity_edges)
+      : size_(quantity_vertex),
+        edges_(quantity_vertex),
+        used_(quantity_vertex, false) {
+    Reader(quantity_edges);
+  }
+
+  void Reader(int quantity_edges) {
+    int from_vertex = 0;
+    int to_vertex = 0;
+    int edge_value;
+    for (int i = 0; i < quantity_edges; ++i) {
+      std::cin >> from_vertex >> to_vertex >> edge_value;
+      edges_[from_vertex].push_back({to_vertex, edge_value});
+      edges_[to_vertex].push_back({from_vertex, edge_value});
+    }
+  }
+
+  void Expand(int v, std::vector<int>& distance, Heap<int>& heap) {
+    if (used_[v]) {
+      return;
+    }
+    used_[v] = true;
+    for (auto edge : edges_[v]) {
+      int x = distance[v] + edge.second;
+      if (distance[edge.first] > x) {
+        heap.ChangeValue({edge.first, x});
+        distance[edge.first] = x;
+      }
+    }
+  }
+
+  void Deixtra(int start_vertex) {
+    std::vector<int> distance(size_, cOverMax);
+    distance[start_vertex] = 0;
+    Heap<int> heap;
+    for (int i = 0; i < size_; ++i) {
+      heap.Push({i, distance[i]});
+    }
+    while (!heap.IsEmpty()) {
+      auto pair = heap.ExtractMin();
+      Expand(pair.first, distance, heap);
+    }
+    for (int i = 0; i < size_; ++i) {
+      std::cout << distance[i] << ' ';
+    }
+    std::cout << '\n';
+  }
+};
+
+void Iteration() {
+  int n = 0;
+  int m = 0;
+  std::cin >> n >> m;
+  Graph graph(n, m);
+  int start_vertex = 0;
+  std::cin >> start_vertex;
+  // std::cout << start_vertex;
+  graph.Deixtra(start_vertex);
+}
+
+void TaskA() {
+  int k = 0;
+  std::cin >> k;
+  for (int i = 0; i < k; ++i) {
+    Iteration();
+  }
+}
+
+int main() {
+  TaskA();
+  return 0;
+}
