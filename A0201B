@@ -1,0 +1,73 @@
+#include <iostream>
+#include <vector>
+
+void B(int house_quantity, int spot_quantity, std::vector<int> house,
+       std::vector<int> pre_sum, std::vector<std::vector<int>> nn) {
+  std::vector<std::vector<int>> previous(spot_quantity,
+                                         std::vector<int>(house_quantity));
+  std::vector<std::vector<int>> dp(
+      spot_quantity,
+      std::vector<int>(house_quantity, pre_sum[house_quantity - 1]));
+  for (int j = 0; j < house_quantity; ++j) {
+    dp[0][j] = house[j] * j - (j == 0 ? 0 : pre_sum[j - 1]);
+  }
+  for (int i = 1; i < spot_quantity; ++i) {
+    for (int j = 0; j < house_quantity; ++j) {
+      for (int alpha = 0; alpha < j; ++alpha) {
+        int local = dp[i - 1][alpha] + nn[alpha][j];
+        bool flag = dp[i][j] < local;
+        dp[i][j] = flag ? dp[i][j] : local;
+        previous[i][j] = flag ? previous[i][j] : alpha;
+      }
+    }
+  }
+  int post_sum = 0;
+  int final = 0;
+  int sum_total = pre_sum[house_quantity - 1];
+  for (int i = house_quantity - 1; i > -1; --i) {
+    dp[spot_quantity - 1][i] +=
+        (post_sum - house[i] * (house_quantity - 1 - i));
+    post_sum += house[i];
+    if (sum_total > dp[spot_quantity - 1][i]) {
+      sum_total = dp[spot_quantity - 1][i];
+      final = i;
+    }
+  }
+  std::cout << sum_total << '\n';
+  std::vector<int> anwser(spot_quantity);
+  for (int i = spot_quantity - 1; i > -1; --i) {
+    anwser[i] = final;
+    final = previous[i][final];
+  }
+  for (int i = 0; i < spot_quantity; ++i) {
+    std::cout << house[anwser[i]] << ' ';
+  }
+}
+
+int main() {
+  int house_quantity = 0;
+  int spot_quantity = 0;
+  std::cin >> house_quantity >> spot_quantity;
+  std::vector<int> house(house_quantity);
+  for (int i = 0; i < house_quantity; ++i) {
+    std::cin >> house[i];
+  }
+  std::vector<int> pre_sum(house_quantity);
+  for (int i = 0; i < house_quantity; ++i) {
+    pre_sum[i] = (i == 0 ? 0 : pre_sum[i - 1]) + house[i];
+  }
+  std::vector<std::vector<int>> nn(house_quantity,
+                                   std::vector<int>(house_quantity));
+  for (int i = 0; i < house_quantity; ++i) {
+    for (int j = i + 1; j < house_quantity; ++j) {
+      int center = (((house[i] + house[j] + 1) / 2));
+      int center_vector =
+          std::lower_bound(&house[i], &house[j], center) - house.data();
+      nn[i][j] += pre_sum[center_vector - 1] - pre_sum[i];
+      nn[i][j] -= (center_vector - i - 1) * house[i];
+      nn[i][j] -= pre_sum[j - 1] - pre_sum[center_vector - 1];
+      nn[i][j] += (j - center_vector) * house[j];
+    }
+  }
+  B(house_quantity, spot_quantity, house, pre_sum, nn);
+}
