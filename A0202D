@@ -1,0 +1,103 @@
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+const int KMax = 100'000;
+const int KOverMax = 1'000'000'000;
+
+int size = 0;
+std::vector<char> color(KMax, 'w');
+std::vector<int> position(KMax, -1);
+std::vector<std::vector<int>> matrix(KMax);
+std::vector<std::vector<int>> matrix_r(KMax);
+std::vector<std::pair<int, size_t>> tin(KMax);
+std::vector<std::pair<int, size_t>> tout(KMax);
+int timer = 0;
+std::vector<int> ans(0);
+
+void Reset() {
+  for (int vertex = 0; vertex < size; ++vertex) {
+    color[vertex] = 'w';
+    tin[vertex] = {vertex, KOverMax};
+    tout[vertex] = {vertex, KOverMax};
+  }
+}
+
+void DFS(int vertex) {
+  color[vertex] = 'g';
+  tin[vertex].second = timer++;
+  for (int to_vertex : matrix[vertex]) {
+    if (color[to_vertex] != 'w') {
+      continue;
+    }
+    DFS(to_vertex);
+  }
+  color[vertex] = 'b';
+  tout[vertex].second = timer++;
+}
+
+void DFSR(int vertex) {
+  ans.push_back(vertex);
+  color[vertex] = 'g';
+  for (int to_vertex : matrix_r[vertex]) {
+    if (color[to_vertex] != 'w') {
+      continue;
+    }
+    DFSR(to_vertex);
+  }
+  color[vertex] = 'b';
+}
+
+void TopSort() {
+  for (int vertex = 0; vertex < size; ++vertex) {
+    if (color[vertex] != 'w') {
+      continue;
+    }
+    DFS(vertex);
+  }
+  std::sort(tout.begin(), tout.begin() + size, [](auto first, auto second) {
+    return first.second > second.second;
+  });
+}
+
+void BoolReaderStaigtReverse(int amount_edges) {
+  int from = 0;
+  int to_vertex = 0;
+  for (int i = 0; i < amount_edges; ++i) {
+    std::cin >> from >> to_vertex;
+    matrix[--from].push_back(--to_vertex);
+    matrix_r[to_vertex].push_back(from);
+  }
+}
+
+void Kosaraiu() {
+  TopSort();
+  for (int vertex = 0; vertex < size; ++vertex) {
+    color[vertex] = 'w';
+  }
+  int counter = 0;
+  for (std::pair<int, int> vertex_pair : tout) {
+    int vertex = vertex_pair.first;
+    if (color[vertex] != 'w') {
+      continue;
+    }
+    DFSR(vertex);
+    ++counter;
+    for (int index : ans) {
+      position[index] = counter;
+    }
+    ans.clear();
+  }
+  std::cout << counter << '\n';
+  for (int vertex = 0; vertex < size; ++vertex) {
+    std::cout << position[vertex] << ' ';
+  }
+}
+
+int main() {
+  int quantity_roads = 0;
+  std::cin >> size >> quantity_roads;
+  BoolReaderStaigtReverse(quantity_roads);
+  Reset();
+  Kosaraiu();
+}
