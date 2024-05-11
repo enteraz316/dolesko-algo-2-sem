@@ -1,0 +1,128 @@
+#include <iostream>
+#include <vector>
+
+const int kMod = 1'000'000'007;
+
+using D2Vector = std::vector<std::vector<int>>;
+using D3Vector = std::vector<D2Vector>;
+int Bit(int mask, int indx) {
+  return static_cast<int>((mask & (1 << indx)) != 0);
+}
+
+bool Fits(int mask, int shift, int pot_value) {
+  return Bit(mask, shift) + Bit(mask, shift + 1) + Bit(mask, shift + 2) +
+             pot_value ==
+         2;
+}
+
+int ClearMask(int mask, int plus, int minus) {
+  int temp = minus ^ (mask | minus);
+  temp = temp | plus;
+  return temp;
+}
+void Recount(int alfa, D3Vector& dp, const D2Vector& map) {
+  int l1 = map[0].size();
+  int fullmask = 1 << (l1 + 1);
+  for (int j = 0; j < l1 - 1; ++j) {
+    for (int mask = 0; mask < fullmask; ++mask) {
+      if ((map[(alfa + 1)][j + 1] == 1 || map[(alfa + 1)][j + 1] == 2) &&
+          Fits(mask, j, 1)) {
+        int new_mask = mask | 1 << (j + 1);
+        dp[alfa % 5][j + 1][new_mask] =
+            ((dp[alfa % 5][j + 1][new_mask] + dp[alfa % 5][j][mask]) % kMod);
+      }
+      if ((map[(alfa + 1)][j + 1] == 0 || map[(alfa + 1)][j + 1] == 2) &&
+          Fits(mask, j, 0)) {
+        int new_mask = mask & (mask ^ (1 << (j + 1)));
+        dp[alfa % 5][j + 1][new_mask] =
+            (dp[alfa % 5][j + 1][new_mask] + dp[alfa % 5][j][mask]) % kMod;
+      }
+      dp[(alfa + 4) % 5][j][mask] = 0;
+    }
+  }
+  for (int mask = 0; mask < fullmask; ++mask) {
+    if ((map[(alfa + 2)][0] == 1 || map[(alfa + 2)][0] == 2)) {
+      int new_mask = (1 << (l1)) ^ (mask | (1 << (l1)));
+      new_mask = new_mask << 1;
+      new_mask = new_mask | 1;
+      dp[(alfa + 1) % 5][0][new_mask] =
+          (dp[(alfa + 1) % 5][0][new_mask] + dp[alfa % 5][l1 - 1][mask]) % kMod;
+    }
+    if ((map[(alfa + 2)][0] == 0 || map[(alfa + 2)][0] == 2)) {
+      int new_mask = (1 << (l1)) ^ (mask | (1 << (l1)));
+      new_mask = new_mask << 1;
+      dp[(alfa + 1) % 5][0][new_mask] =
+          (dp[(alfa + 1) % 5][0][new_mask] + dp[alfa % 5][l1 - 1][mask]) % kMod;
+    }
+    dp[(alfa + 4) % 5][l1 - 1][mask] = 0;
+  }
+}
+
+void TaskP(int l1, int l2, D2Vector& map) {
+  const int kTen = 11;
+  if (l1 == 1 && l2 == 1) {
+    std::cout << (map[0][0] == 2 ? 2 : 1);
+    return;
+  }
+  if (l1 == 1) {
+    int count = 1;
+    for (int i = 0; i < l2; ++i) {
+      count = ((map[i][0] == 2) ? ((count * 2) % kMod) : (count));
+    }
+    std::cout << count;
+    return;
+  }
+  if (l2 == 1) {
+    int count = 1;
+    for (int i = 0; i < l1; ++i) {
+      count = ((map[0][i] == 2) ? ((count * 2) % kMod) : (count));
+    }
+    std::cout << count;
+    return;
+  }
+  int fullmask = 1 << (l1 + 1);
+  D3Vector dp(kTen, D2Vector(l1, std::vector<int>(fullmask)));
+  int plus = 0;
+  int minus = 0;
+  for (int i = 0; i < l1; ++i) {
+    plus = plus | (static_cast<int>(map[0][i] == 1) << i);
+    minus = minus | (static_cast<int>(map[0][i] == 0) << i);
+  }
+  plus = plus << 1;
+  minus = minus << 1;
+  plus = plus | (static_cast<int>(map[1][0] == 1) << 0);
+  minus = minus | (static_cast<int>(map[1][0] == 0) << 0);
+
+  for (int mask = 0; mask < fullmask; ++mask) {
+    int mask_1 = ClearMask(mask, plus, minus);
+    dp[0][0][mask_1] = 1;
+  }
+  for (int i = 0; i < l2 - 1; ++i) {
+    Recount(i, dp, map);
+  }
+  int ans = 0;
+  for (int mask = 0; mask < fullmask; ++mask) {
+    ans = (ans + dp[(l2 - 2) % 5][l1 - 1][mask]) % kMod;
+  }
+  std::cout << ans << '\n';
+}
+
+int main() {
+  int length_1 = 0;
+  int length_2 = 0;
+  std::cin >> length_1 >> length_2;
+  D2Vector map(length_2 + 2, std::vector<int>(length_1));
+  for (int i = 0; i < length_1; ++i) {
+    for (int j = 0; j < length_2; ++j) {
+      char in;
+      std::cin >> in;
+      if (in == '.') {
+        map[j][i] = 2;
+      }
+      if (in == '+') {
+        map[j][i] = 1;
+      }
+    }
+  }
+  TaskP(length_1, length_2, map);
+}
