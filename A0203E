@@ -1,0 +1,114 @@
+#include <iostream>
+#include <vector>
+
+const long long cOverMax = 1'000'000'00;
+const long long cMaxAbs = 100'000;
+
+class Graph {
+  using Vector = std::vector<long long>;
+
+  long long size_ = 0;
+  std::vector<std::vector<long long>> edges_;
+  std::vector<bool> used_;
+
+ public:
+  Graph(long long quantity_vertex, long long quantity_edges)
+      : size_(quantity_vertex),
+        edges_(quantity_vertex),
+        used_(quantity_vertex, false) {
+    Reader(quantity_edges);
+  }
+  Graph(long long quantity_vertex)
+      : size_(quantity_vertex),
+        edges_(quantity_vertex, std::vector<long long>(quantity_vertex)),
+        used_(quantity_vertex, false) {
+    Reader(quantity_vertex);
+  }
+
+  void Reader(long long quantity_vertex) {
+    for (long long i = 0; i < quantity_vertex; ++i) {
+      for (int j = 0; j < quantity_vertex; ++j) {
+        std::cin >> edges_[i][j];
+        if (edges_[i][j] == cMaxAbs) {
+          edges_[i][j] = cOverMax;
+        }
+      }
+    }
+  }
+
+  void Floid() {
+    std::vector<Vector> dp(size_, Vector(size_, cOverMax));
+    std::vector<Vector> next(size_, Vector(size_, -1));
+    for (long long i = 0; i < size_; ++i) {
+      for (int j = 0; j < size_; ++j) {
+        dp[i][j] = edges_[i][j];
+        if (i == j) {
+          dp[i][j] = std::min(0LL, dp[i][j]);
+        }
+        if (dp[i][j] != cOverMax) {
+          next[i][j] = j;
+        }
+      }
+    }
+    for (long long k = 0; k < size_; ++k) {
+      for (long long i = 0; i < size_; ++i) {
+        for (long long j = 0; j < size_; ++j) {
+          int x = dp[i][k] + dp[k][j];
+          if (x < dp[i][j]) {
+            dp[i][j] = x;
+            next[i][j] = next[i][k];
+          }
+        }
+      }
+      /*
+      for (long long i = 0; i < size_; ++i) {
+        for (long long j = 0; j < size_; ++j) {
+          std::cout << dp[i][j] << ' ';
+        }
+        std::cout << '\n';
+      }
+       */
+    }
+
+    for (int i = 0; i < size_; ++i) {
+      if (dp[i][i] < 0) {
+        std::cout << "YES\n";
+        DisplayMinusCicle(next, i);
+        return;
+      }
+    }
+    std::cout << "NO";
+  }
+
+  void DisplayMinusCicle(const std::vector<Vector>& next, long long start) {
+    long long i = start;
+    std::vector<long long> anwser;
+    while (!used_[i]) {
+      used_[i] = true;
+      anwser.push_back(i);
+      i = next[i][start];
+    }
+    anwser.push_back(i);
+    used_[i] = false;
+    auto iter = anwser.begin();
+    while (used_[*iter]) {
+      ++iter;
+    }
+    std::cout << anwser.end() - iter << std::endl;
+    for (; iter != anwser.end(); ++iter) {
+      std::cout << (*iter + 1) << ' ';
+    }
+  }
+};
+
+void TaskE() {
+  int n = 0;
+  std::cin >> n;
+  Graph graph(n);
+  graph.Floid();
+}
+
+int main() {
+  TaskE();
+  return 0;
+}
