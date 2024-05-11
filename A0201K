@@ -1,0 +1,63 @@
+#include <cstdint>
+#include <iostream>
+
+int main() {
+  int64_t number_objects = 0;
+  int64_t backpack_capasity = 0;
+  std::cin >> number_objects >> backpack_capasity;
+  auto* weight = new int64_t[number_objects + 1];
+  for (int i = 1; i < number_objects + 1; ++i) {
+    std::cin >> weight[i];
+  }
+  auto* objects = new int64_t[number_objects + 1];
+  for (int i = 1; i < number_objects + 1; ++i) {
+    std::cin >> objects[i];
+  }
+  auto* dp = new int64_t*[number_objects + 1];
+  for (int64_t i = 0; i < number_objects + 1; ++i) {
+    dp[i] = new int64_t[backpack_capasity + 1]();
+    for (int j = 0; j < backpack_capasity + 1; ++j) {
+      dp[i][j] = 0;
+    }
+  }
+  for (int64_t i = 1; i < number_objects + 1; ++i) {
+    for (int64_t j = 0; j < backpack_capasity + 1; ++j) {
+      if (!(j < weight[i]) &&
+          dp[i - 1][j] <= dp[i - 1][j - weight[i]] + objects[i]) {
+        dp[i][j] = dp[i - 1][j - weight[i]] + objects[i];
+      } else {
+        dp[i][j] = dp[i - 1][j];
+      }
+    }
+  }
+  int64_t free_weght = 0;
+  for (int64_t i = 1; i < backpack_capasity + 1; ++i) {
+    if (dp[number_objects][i] > dp[number_objects][free_weght]) {
+      free_weght = i;
+    }
+  }
+  int64_t amount = 0;
+  auto* res = new int64_t[number_objects]();
+  int64_t counter = number_objects;
+  while (free_weght > 0) {
+    if (free_weght >= weight[counter] &&
+        dp[counter][free_weght] ==
+            dp[counter - 1][free_weght - weight[counter]] + objects[counter]) {
+      res[amount] = counter;
+      ++amount;
+      free_weght -= weight[counter];
+    }
+    --counter;
+  }
+  for (int64_t j = amount - 1; j > -1; --j) {
+    std::cout << res[j] << '\n';
+  }
+  delete[] res;
+  for (int64_t i = 0; i < number_objects + 1; ++i) {
+    delete[] dp[i];
+  }
+  delete[] dp;
+  delete[] weight;
+  delete[] objects;
+  return 0;
+}
