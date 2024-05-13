@@ -1,0 +1,87 @@
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+const int KMax = 100'000;
+const int KOverMax = 1'000'000'000;
+
+int size = 0;
+std::vector<char> color(KMax, 'w');
+std::vector<std::vector<int>> matrix(KMax);
+std::vector<std::pair<int, int>> tin(KMax);
+std::vector<std::pair<int, int>> tout(KMax);
+std::vector<int> ret(KMax, KOverMax);
+std::vector<int> parent(KMax, -1);
+int timer = 0;
+std::vector<int> ans(0);
+std::vector<std::pair<int, int>> edge_list;
+
+void Reset() {
+  for (int vertex = 0; vertex < size; ++vertex) {
+    color[vertex] = 'w';
+    tin[vertex] = {vertex, KOverMax};
+    tout[vertex] = {vertex, KOverMax};
+  }
+}
+
+int DFS(int vertex) {
+  int min_subtree = KOverMax;
+  color[vertex] = 'g';
+  tin[vertex].second = timer++;
+  ret[vertex] = tin[vertex].second;
+  for (int to_vertex : matrix[vertex]) {
+    if (color[to_vertex] != 'w') {
+      min_subtree = std::min(min_subtree, ret[to_vertex]);
+    } else {
+      parent[to_vertex] = vertex;
+      min_subtree = std::min(min_subtree, DFS(to_vertex));
+    }
+  }
+  color[vertex] = 'b';
+  tout[vertex].second = timer++;
+  ret[vertex] = std::min(ret[vertex], min_subtree);
+  return ret[vertex];
+}
+
+void BoolReaderStraigt(int amount_edges) {
+  int from = 0;
+  int to_vertex = 0;
+  for (int i = 0; i < amount_edges; ++i) {
+    std::cin >> from >> to_vertex;
+    matrix[--from].push_back(--to_vertex);
+    matrix[to_vertex].push_back(from);
+    edge_list.push_back({from, to_vertex});
+  }
+}
+
+void Bridges() {
+  for (auto edge_iter = edge_list.begin(); edge_iter < edge_list.end();
+       ++edge_iter) {
+    auto edge = *edge_iter;
+    bool condition_one = (tin[edge.first].second < tin[edge.second].second);
+    bool condition_two = (ret[edge.second] == tin[edge.second].second);
+    bool condition_three = (ret[edge.first] == tin[edge.first].second);
+    if ((condition_one && condition_two) ||
+        (!condition_one && condition_three)) {
+      ans.push_back(edge_iter - edge_list.begin() + 1);
+    }
+  }
+  std::cout << ans.size() << '\n';
+  for (int edge_number : ans) {
+    std::cout << edge_number << '\n';
+  }
+}
+
+int main() {
+  int quantity_roads = 0;
+  std::cin >> size >> quantity_roads;
+  BoolReaderStraigt(quantity_roads);
+  Reset();
+  for (int vertex = 0; vertex < size; ++vertex) {
+    if (color[vertex] != 'w') {
+      continue;
+    }
+    DFS(vertex);
+  }
+  Bridges();
+}
