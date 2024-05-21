@@ -1,0 +1,145 @@
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+template <typename T>
+class DSU {
+ private:
+  std::vector<T> parent_;
+  std::vector<T> size_subtree_;
+
+ public:
+  DSU(size_t size)
+      : parent_(std::vector(size, -1)), size_subtree_(std::vector(size, 1)) {}
+
+  T Get(T v) {
+    if (parent_[v] == -1) {
+      return v;
+    }
+    parent_[v] = Get(parent_[v]);
+    return parent_[v];
+  }
+  bool Check(T u, T v) {
+    u = Get(u);
+    v = Get(v);
+    return u == v;
+  }
+
+  void Unite(T u, T v) {
+    u = Get(u);
+    v = Get(v);
+    if (u == v) {
+      return;
+    }
+    if (size_subtree_[u] < size_subtree_[v]) {
+      std::swap(u, v);
+    }
+    parent_[v] = u;
+    size_subtree_[u] += size_subtree_[v];
+  }
+};
+
+template <typename T>
+struct Edge {
+  T from = 0;
+  T to = 0;
+  int cost = 0;
+  Edge() = default;
+  Edge(T infrom, T into, int incost) : from(infrom), to(into) { cost = incost; }
+};
+
+template <typename T>
+std::istream& operator>>(std::istream& in, Edge<T>& edge) {
+  in >> edge.from >> edge.to >> edge.cost;
+  --edge.from;
+  --edge.to;
+  return in;
+}
+
+template <typename T>
+class Graph {
+  using Vector = std::vector<Edge<T>>;
+  long long size_ = 0;
+  long long quantity_edges_ = 0;
+  Vector edges_;
+  std::vector<Vector> graph_;
+
+ public:
+  Graph(Graph&& other)
+      : size_(other.size_),
+        quantity_edges_(other.quantity_edges_),
+        edges_(std::move(other.edges_)),
+        graph_(std::move(other.graph_)) {}
+
+  Graph(int quantity_vertex)
+      : size_(quantity_vertex),
+        quantity_edges_(0),
+        edges_(0),
+        graph_(quantity_vertex) {}
+
+  Graph(int quantity_vertex, int quantity_edges)
+      : size_(quantity_vertex),
+        quantity_edges_(quantity_edges),
+        edges_(quantity_edges),
+        graph_(quantity_vertex) {
+    Reader(quantity_edges);
+  }
+
+  void Reader(long long quantity_edges) {
+    Edge<T> edge;
+    for (long long i = 0; i < quantity_edges; ++i) {
+      std::cin >> edge;
+
+      edges_.push_back(edge);
+
+      graph_[edge.from].push_back(edge);
+      std::swap(edge.to, edge.from);
+      graph_[edge.from].push_back(edge);
+    }
+  }
+
+  void Push(Edge<T> edge) {
+    edges_.push_back(edge);
+    graph_[edge.from].push_back(edge);
+    std::swap(edge.to, edge.from);
+    graph_[edge.from].push_back(edge);
+    ++quantity_edges_;
+  }
+
+  Graph<T> Kruskal() {
+    DSU<int> dsu(size_);
+    Graph<T> mst(size_);
+    std::sort(edges_.begin(), edges_.end(),
+              [](auto a, auto b) { return a.cost < b.cost; });
+    for (auto edge : edges_) {
+      if (!dsu.Check(edge.from, edge.to)) {
+        dsu.Unite(edge.from, edge.to);
+        mst.Push(edge);
+      }
+    }
+    return mst;
+  }
+
+  int Weight() {
+    int weight = 0;
+    for (auto edge : edges_) {
+      weight += edge.cost;
+    }
+    return weight;
+  }
+  ~Graph() = default;
+};
+
+void MST() {
+  long long quantity_vertex = 0;
+  long long quantity_edges = 0;
+  std::cin >> quantity_vertex >> quantity_edges;
+  Graph<int> graph(quantity_vertex, quantity_edges);
+  auto mst = graph.Kruskal();
+  std::cout << mst.Weight() << std::endl;
+}
+
+int main() {
+  MST();
+  return 0;
+}
